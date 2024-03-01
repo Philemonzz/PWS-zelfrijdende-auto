@@ -1,0 +1,138 @@
+
+
+#define trigPin1 3 	// De #define is bedoelt om de Arduino te laten weten welke poorten hij moet gebruiken bij welke namen. Als er in de code bijvoorbeeld naar Trigpin1 wordt verwijst, zal de Arduino door deze code poort 3 gebruiken.
+#define echoPin1 2
+#define trigPin2 4
+#define echoPin2 6
+#define trigPin3 11
+#define echoPin3 12
+#define trigPin4 10
+#define echoPin4 8
+
+
+int wielen1 = 5;	// Met int krijgen de integers een waarde, bij de eerste vier (wielen1, wielen2, arduino2 en sturen) is de waarde de poort op de arduino die wordt bedoelt als er in de code wordt verwijst naar bijvoorbeeld wielen1. 
+int wielen2 = 13;
+int sturen1 = 9;
+int sturen2 = 7;
+
+int duration = 0;	// Bij de laatste zes worden er startwaardes gegeven voor de intergers die er staan, zodat de Arduino niet vastloopt omdat hij niet weet waar hij moet beginnen.
+int BackRightSensor = 0;
+int BackLeftSensor = 0;
+int FrontLeftSensor = 0;
+int FrontRightSensor = 0;
+int distance = 0;
+
+
+void SonarSensor(int trigPin, int echoPin);
+
+void Vooruit(){		// Hier worden de commandos uitgeschreven en een naam gegeven, zodat de uitvoerende code er veel overzichtelijker uitziet.
+digitalWrite(wielen1, LOW);
+digitalWrite(wielen2, HIGH);
+}
+
+void Achteruit(){
+  digitalWrite(wielen1, HIGH);
+  digitalWrite(wielen2, LOW);
+}
+
+void Stop(){
+  digitalWrite(wielen1, LOW);
+  digitalWrite(wielen2, LOW);
+  digitalWrite(sturen1, HIGH);
+  digitalWrite(sturen2, HIGH);
+}
+void Stuurlinks() {
+ digitalWrite(sturen1, LOW);
+ digitalWrite(sturen2, HIGH);
+  }
+void Stuurrechts() {
+  digitalWrite(sturen1, HIGH);
+  digitalWrite(sturen2, LOW);
+}
+void Nietsturen() {
+  digitalWrite(sturen1, LOW);
+  digitalWrite(sturen2, LOW);
+}
+
+
+void setup() {		// Vervolgens geeft de code aan wat voor functie verschillende pins krijgen:
+  Serial.begin(115200);
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+  pinMode(trigPin3, OUTPUT);
+  pinMode(echoPin3, INPUT);
+  pinMode(trigPin4, OUTPUT);
+  pinMode(echoPin4, INPUT);
+  pinMode(wielen1, OUTPUT);
+  pinMode(wielen2, OUTPUT);
+  pinMode(sturen1, OUTPUT);
+  pinMode(sturen2, OUTPUT);
+}
+
+
+void loop() {		// De void loop is een stukje code waar alles herhaald wordt, in ons geval wordt er steeds gescand en berekend hoe ver weg het dichtstbijzijnde object is. 
+  SonarSensor(trigPin1, echoPin1);
+  FrontRightSensor = distance;
+  SonarSensor(trigPin2, echoPin2);
+  FrontLeftSensor = distance;
+  SonarSensor(trigPin3, echoPin3);
+  BackLeftSensor = distance;
+  SonarSensor(trigPin4, echoPin4);
+  BackRightSensor = distance;
+  
+  
+  
+  Serial.print("FL:");		// Hierdoor worden de afstanden in de seriële monitor geprint voor eventuele probleemoplossing.
+  Serial.print(FrontLeftSensor);
+  Serial.print(" - FR: ");
+  Serial.print(FrontRightSensor);
+  Serial.print(" - BL: ");
+  Serial.print(BackLeftSensor);
+  Serial.print(" - BR: ");
+  Serial.println(BackRightSensor);
+
+
+
+
+				// Vervolgens controleert de arduino of een sensor meer dan 50 centimeter ruimte heeft, en welke sensor de meeste ruimte heeft. De auto stuurt dan met behulp van de servomotor de benodigde kant op en gaat vooruit als het om een van de voor sensoren gaat en achteruit als het om een van de achtersensoren gaat.
+ if (FrontLeftSensor > 50 && FrontRightSensor > 50) {										
+    Vooruit();
+    Nietsturen();}
+  else if (FrontLeftSensor > 50 && FrontLeftSensor >= FrontRightSensor && FrontLeftSensor >= BackLeftSensor && FrontLeftSensor >= BackRightSensor) { 
+    Vooruit();
+	Stuurlinks();
+  } else if (FrontRightSensor > 50 && FrontLeftSensor < FrontRightSensor && FrontRightSensor >= BackLeftSensor && FrontRightSensor >= BackRightSensor) {
+    Vooruit();
+    Stuurrechts();
+  } else if (BackRightSensor > 50 && BackRightSensor >= FrontRightSensor && BackRightSensor >= BackLeftSensor && FrontLeftSensor < BackRightSensor) {
+    Achteruit();
+    Stuurrechts(); 
+
+
+
+ } else if (BackLeftSensor > 50 && BackLeftSensor > FrontRightSensor && FrontLeftSensor < BackLeftSensor && BackLeftSensor >= BackRightSensor) {	// Hier bij de BackLeftSensor wordt dus gekeken of deze meer dan 50 cm ruimte heeft, en of deze meer ruimte heeft dan de 3 andere sensoren. Als dat zo is, rijdt de auto achteruit en naar links.
+    Achteruit();
+    Stuurlinks();
+
+
+
+} else if (BackLeftSensor < 50 && BackRightSensor < 50 && FrontRightSensor < 50 && FrontLeftSensor < 50) {	//Als alle sensoren minder dan 50 cm afstand hebben, stopt de arduino met rijden en sturen.
+    Stop();
+  }
+}
+
+
+
+
+void SonarSensor(int trigPin, int echoPin) {		// Hier worden de ultrasoonsensoren ingesteld om kort aan te gaan en weer uit te gaan. Daarna wordt een berekening gemaakt om te kijken hoe ver het dichtstbijzijnde object is:
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distance = (duration / 2) / 29.1;
+}
+
